@@ -1,0 +1,46 @@
+#
+#
+# docker run --name searxng -d -p 8888:8080 -v ./config/:/etc/searxng/ -v ./data/:/var/cache/searxng/ docker.io/searxng/searxng:latest
+---
+
+networks:
+  searxng-net:
+    driver: bridge
+
+volumes:
+  searxng-data:
+    external: true
+
+services:
+  searxng:
+    container_name: searxng-1
+    # FIXME(JEFF): Pin the latest stable version before we use this for
+    # production!
+    image: docker.io/searxng/searxng:latest
+    restart: unless-stopped
+    networks:
+      - searxng-net
+    ports:
+      - "8888:8080"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      #- /etc/ssl/certs:/etc/ssl/certs:ro
+      #- /etc/ca-certificates/trust-source/anchors:/usr/share/ca-certificates:ro
+      - ./mounts/config:/etc/searxng
+      - searxng-data:/var/cache/searxng
+    env_file:
+      .env
+    environment:
+      - SEARXNG_SETTINGS_PATH=/etc/searxng/settings.yml
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
